@@ -1,0 +1,18 @@
+[project]
+name = "gptclient"
+version = "0.1.0"
+description = "Terminal-Chat-Bot"
+requires-python = ">=3.11.2"
+dependencies = [
+    "click>=8.1",
+    "openai>=1.2.3",
+    "rich",
+    
+]
+
+[project.scripts]
+gptclient = "gptclient.app:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
