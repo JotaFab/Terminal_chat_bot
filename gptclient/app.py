@@ -1,64 +1,56 @@
 import os
-import sys
 from rich.console import Console
 from rich.markdown import Markdown
 from openai import OpenAI
 import click
-from prompt_toolkit import prompt
-from prompt_toolkit.styles import Style
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit import PromptSession
 from prompt_toolkit import print_formatted_text as print
+from gptclient.options import chose_options
+from prompt_toolkit.styles import Style
+from gptclient.options import assistant_options,chat,thread_options,file_options
+from prompt_toolkit import Application
+def get_openai_client(api_key):
+    key = os.environ.get("OPENAI_API_KEY") or api_key
+    client = OpenAI(
+        api_key=key,
+        organization='org-HisdlnrnC90sbXwyPfQqWu9k'
+    )
+    return client
 
-from assistant import create_assistant, retrive_assistant
-from messages import send_message
-from threads import create_thread
+
+banner = """
+_________  ___  ___  _________  ________  ________  ________  ________  ________  ___  ___  ___  ________  ___  ___  ___  ________  ________  ________  ________  _______      
+|\___   ___\\  \|\  \|\___   ___\\   __  \|\   __  \|\   __  \|\   __  \|\   __  \|\  \|\  \|\  \|\   ____\|\  \|\  \|\  \|\   __  \|\   __  \|\   ____\|\   __  \|\  ___ \     
+\|___ \  \_\ \  \\\  \|___ \  \_\ \  \|\  \ \  \|\  \ \  \|\  \ \  \|\  \ \  \|\  \ \  \\\  \ \  \ \  \___|\ \  \\\  \ \  \\\  \ \  \|\  \ \  \|\  \ \  \___|\ \  \|\  \ \   __/|    
+     \ \  \ \ \   __  \   \ \  \ \ \   _  _\ \   __  \ \   _  _\ \   __  \ \   __  \ \   __  \ \  \ \  \    \ \   __  \ \  \\\  \ \   _  _\ \   __  \ \  \    \ \   _  _\ \  \_|/__  
+      \ \  \ \ \  \ \  \   \ \  \ \ \  \\  \\ \  \ \  \ \  \\  \\ \  \ \  \ \  \ \  \ \  \ \  \ \  \ \  \____\ \  \ \  \ \  \\\  \ \  \\  \\ \  \ \  \ \  \____\ \  \\  \\ \  \_|\ \ 
+       \ \__\ \ \__\ \__\   \ \__\ \ \__\\ _\\ \__\ \__\ \__\\ _\\ \__\ \__\ \__\ \__\ \__\ \__\ \__\ \____ 
+"""
 
 
-
-
-#@click.option(prompt='Your prompt', help='Ask something')
 @click.command()
 @click.option('--api_key', '-k', help='Openai API key. If not provided, will prompt for it or use the environment variable OPENAI_API_KEY.')
 def main(api_key):
     
+    session = PromptSession()
     
-
-    console = Console()
-    key = os.environ.get("OPENAI_API_KEY") or api_key
-
-    client = OpenAI(
-        api_key=key,
-        organization='org-HisdlnrnC90sbXwyPfQqWu9k'  
-    )
-    if key:
-        try:
-            client.models.list()
-            
-        except KeyboardInterrupt:
-            click.echo("KeyboarInterrupt... \n Exiting...")
-            exit(0)
-    
-    usr_name = prompt("Enter your username: \n")
-    
+    print(f"Welcome to the GPT Terminal Assistant!\n\n")
+    print(f"To do: \n\n {banner} \n\n")
     try:
-        usr_prompt = prompt(f"{usr_name}: \n")
-        while usr_prompt.lower() != "q" or "quit" or "exit":
-            assistant = retrive_assistant(client,id="asst_oIDpBKU6zFBY5TbkvfaVuIav")
-            usr_thread =create_thread(client)
-            msg = send_message(client,assistant , usr_thread, usr_prompt)
-            #md_others = others
-            md = Markdown(msg)
-            print(f"{assistant.name}: \n")
-            console.print(md)
-            
-            #console.print(others)
-            usr_prompt = prompt(f"{usr_name}: \n")
+        client = get_openai_client(api_key)
     except Exception as e:
         print(f"Error: {e}", 'light_red')
         exit(1)
-    except KeyboardInterrupt:
-        print(f"Keyboard Interrupt, Exiting...", 'light_red')
-        exit(0)
+    try:
+        client = get_openai_client(api_key)
+        
+        chose_options(client,session)
+    except Exception as e:
+        print(f"Error: {e}", 'light_red')
+        exit(1)
     
+        
 if __name__=="__main__":
-    main()
-    # 
+    
+    main()      

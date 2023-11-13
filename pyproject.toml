@@ -5,9 +5,10 @@ description = "Terminal-Chat-Bot"
 requires-python = ">=3.11.2"
 dependencies = [
     "click>=8.1",
+    "markdown-it-py>=3.0.0",
     "openai>=1.2.3",
-    "rich",
-    
+    "prompt-toolkit>=3.0.40",
+    "rich>=12.6.0",
 ]
 
 [project.scripts]

@@ -1,5 +1,6 @@
 from runs import create_run, retrieve_run, list_steps
 import time
+from gptclient.logs import log_to_file
 
 def create_message(client,thread,prompt):
     message = client.beta.threads.messages.create(
@@ -7,6 +8,7 @@ def create_message(client,thread,prompt):
         role="user",
         content=prompt,
     )
+    log_to_file("messages", message)
     return message
 
 def retrieve_message(client,thread,msg_id):
