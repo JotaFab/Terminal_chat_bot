@@ -1,56 +1,67 @@
 import os
-from rich.console import Console
-from rich.markdown import Markdown
+import readline
+import rlcompleter
 from openai import OpenAI
-import click
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit import PromptSession
-from prompt_toolkit import print_formatted_text as print
-from gptclient.options import chose_options
-from prompt_toolkit.styles import Style
-from gptclient.options import assistant_options,chat,thread_options,file_options
-from prompt_toolkit import Application
-def get_openai_client(api_key):
-    key = os.environ.get("OPENAI_API_KEY") or api_key
-    client = OpenAI(
-        api_key=key,
-        organization='org-HisdlnrnC90sbXwyPfQqWu9k'
-    )
-    return client
+from rich.console import Console
+from rich.traceback import install
+from rich.prompt import Prompt
+from gptclient.chat import chat
 
+install(show_locals=True)
+console = Console(stderr=True)
 
-banner = """
-_________  ___  ___  _________  ________  ________  ________  ________  ________  ___  ___  ___  ________  ___  ___  ___  ________  ________  ________  ________  _______      
-|\___   ___\\  \|\  \|\___   ___\\   __  \|\   __  \|\   __  \|\   __  \|\   __  \|\  \|\  \|\  \|\   ____\|\  \|\  \|\  \|\   __  \|\   __  \|\   ____\|\   __  \|\  ___ \     
-\|___ \  \_\ \  \\\  \|___ \  \_\ \  \|\  \ \  \|\  \ \  \|\  \ \  \|\  \ \  \|\  \ \  \\\  \ \  \ \  \___|\ \  \\\  \ \  \\\  \ \  \|\  \ \  \|\  \ \  \___|\ \  \|\  \ \   __/|    
-     \ \  \ \ \   __  \   \ \  \ \ \   _  _\ \   __  \ \   _  _\ \   __  \ \   __  \ \   __  \ \  \ \  \    \ \   __  \ \  \\\  \ \   _  _\ \   __  \ \  \    \ \   _  _\ \  \_|/__  
-      \ \  \ \ \  \ \  \   \ \  \ \ \  \\  \\ \  \ \  \ \  \\  \\ \  \ \  \ \  \ \  \ \  \ \  \ \  \ \  \____\ \  \ \  \ \  \\\  \ \  \\  \\ \  \ \  \ \  \____\ \  \\  \\ \  \_|\ \ 
-       \ \__\ \ \__\ \__\   \ \__\ \ \__\\ _\\ \__\ \__\ \__\\ _\\ \__\ \__\ \__\ \__\ \__\ \__\ \__\ \____ 
-"""
-
-
-@click.command()
-@click.option('--api_key', '-k', help='Openai API key. If not provided, will prompt for it or use the environment variable OPENAI_API_KEY.')
-def main(api_key):
-    
-    session = PromptSession()
-    
-    print(f"Welcome to the GPT Terminal Assistant!\n\n")
-    print(f"To do: \n\n {banner} \n\n")
+def valid_api_key(api_key):
+    """Check if the api_key is valid"""
+    client = OpenAI(api_key=api_key)
     try:
-        client = get_openai_client(api_key)
+        client.models.list()
+        return True
     except Exception as e:
-        print(f"Error: {e}", 'light_red')
-        exit(1)
+        console.print_exception(f"Error: {e}")
+        return False
+    
+    
+    
+def get_api_key():
+    """Get the OpenAI API key from the environment variable OPENAI_API_KEY if it exists, otherwise prompt the user for it."""
+    api_key = None
+    if os.environ.get("OPENAI_API_KEY"):
+        api_key = os.environ["OPENAI_API_KEY"]
+        if not valid_api_key(api_key):
+            api_key = None
+        else:
+            console.print(f"Using API key from environment variable OPENAI_API_KEY", style="bold green")
+    else:
+        api_key = console.input("Enter your OpenAI API key: \n")
+        while not api_key.startswith("sk-"):
+            if not valid_api_key(api_key):
+                api_key = None
+                api_key = console.input("Enter a valid OpenAI API key: \n", style="bold red")
+        return api_key
+                
+        
+        """comprobar que la key tenga un formato valido"""
+    
+    return api_key
+    
+def main():
+    """Main function"""
+    # Validar la api_key
+    api_key = get_api_key()
+    
+    # Crear el cliente de OPENAI
+    client = OpenAI(api_key=api_key)
+    
+    
+    # Iniciar el chat
     try:
-        client = get_openai_client(api_key)
-        
-        chose_options(client,session)
+        chat(client, console)
     except Exception as e:
-        print(f"Error: {e}", 'light_red')
+        console.print_exception( f"Error: {e}")
         exit(1)
-    
         
-if __name__=="__main__":
+    return
+
+if __name__ == '__main__':
+    main()
     
-    main()      
