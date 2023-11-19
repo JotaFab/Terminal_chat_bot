@@ -1,0 +1,7 @@
+Input {
+  border: tall $main-lighten-1 25%;
+}
+
+Input:focus {
+  border: tall $main;
+}

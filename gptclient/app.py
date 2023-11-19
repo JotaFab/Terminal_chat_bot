@@ -1,67 +1,92 @@
 import os
-import readline
-import rlcompleter
+
 from openai import OpenAI
-from rich.console import Console
-from rich.traceback import install
-from rich.prompt import Prompt
-from gptclient.chat import chat
 
-install(show_locals=True)
-console = Console(stderr=True)
 
-def valid_api_key(api_key):
-    """Check if the api_key is valid"""
-    client = OpenAI(api_key=api_key)
-    try:
-        client.models.list()
-        return True
-    except Exception as e:
-        console.print_exception(f"Error: {e}")
-        return False
+from textual import events, log, on
+from textual.app import App, ComposeResult
+from textual.containers import ScrollableContainer
+from textual.widgets import Button, Header, Footer, Input,Label,Select, Pretty, Static
+from pathlib import Path
+from gptclient.screens.chat_screen import ChatScreen
+from gptclient.screens.assistants_screen import AssistantsScreen
+from textual.binding import Binding
+
+from gptclient.database import *
+
+
+from gptclient.screens.chat_screen import get_api_key
+   
+
+class GptclientApp(App):
+    
+    CSS_PATH=Path(__file__).parent / "style/main_style.tcss"
     
     
-    
-def get_api_key():
-    """Get the OpenAI API key from the environment variable OPENAI_API_KEY if it exists, otherwise prompt the user for it."""
-    api_key = None
-    if os.environ.get("OPENAI_API_KEY"):
-        api_key = os.environ["OPENAI_API_KEY"]
-        if not valid_api_key(api_key):
-            api_key = None
-        else:
-            console.print(f"Using API key from environment variable OPENAI_API_KEY", style="bold green")
-    else:
-        api_key = console.input("Enter your OpenAI API key: \n")
-        while not api_key.startswith("sk-"):
-            if not valid_api_key(api_key):
-                api_key = None
-                api_key = console.input("Enter a valid OpenAI API key: \n", style="bold red")
-        return api_key
-                
+    BINDINGS = [
+        Binding("ctrl+q", action="quit", description="Quit"),
+        Binding("ctrl+c", action="quit", description="Quit"),
+        Binding("ctrl+a", action="create_assistant", description="Create assistant"),
+        Binding("ctrl+c", action="set_chat", description="Chat tab"),]
+    def __init__(self):
         
-        """comprobar que la key tenga un formato valido"""
-    
-    return api_key
-    
-def main():
-    """Main function"""
-    # Validar la api_key
-    api_key = get_api_key()
-    
-    # Crear el cliente de OPENAI
-    client = OpenAI(api_key=api_key)
-    
-    
-    # Iniciar el chat
-    try:
-        chat(client, console)
-    except Exception as e:
-        console.print_exception( f"Error: {e}")
-        exit(1)
+        super().__init__()
+        self.dark = True
+        self.assistant_id=None
+        self.assistant_options = get_assistants_list() 
+        self.usr_name = "User"
+        #self.api_key = get_api_key()
+        self.api_key = None
+        self.client = None
+        #log(locals())
+    def compose(self) -> ComposeResult:
         
-    return
+        """Create child widgets for the app."""
+        yield Header()
+        yield Label("GPT Client")
+        yield Label("Enter your user name:")
+        yield Input(id="usr_name",placeholder="User")
+        yield Label("Select assistant:")
+        yield Select(prompt="Select assistant:", options=self.assistant_options)
+        yield Button("Create assistant", id="create_assistant")
+        yield Button("Chat", id="set_chat")
+        yield Footer()
+        
+    def on_mount(self) -> None:
+        """Called when the app is mounted."""
+        self.api_key = get_api_key()
+        log()
+        self.client = OpenAI(
+            api_key=self.api_key
+        )
+        
+        
+    @on(Input.Changed, "usr_name")
+    def usr_name_changed(self, event: Input.Changed) -> None:
+        self.usr_name = str(event.value)
+        
+    @on(Select.Changed)
+    def select_changed(self, event: Select.Changed) -> None:
+        self.assistant_id = str(event.value) 
+    
+    @on(Button.Pressed, "#create_assistant")
+    def action_create_assistant(self) -> None:
+        self.push_screen(AssistantsScreen())
+    
+    @on(Button.Pressed, "#set_chat")    
+    def action_set_chat(self) -> None:
+        self.push_screen(ChatScreen())
+        
+        
+
+            
+            
+
+
+app = GptclientApp()
+    
+
 
 if __name__ == '__main__':
-    main()
+    app.run()
     
